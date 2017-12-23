@@ -159,7 +159,7 @@ class Lua:
             mkdir -p tmp/install;
             install -D build/lua.pc $PREFIX/lib/pkgconfig/$PKGNAME.pc;
             make -f Makefile V=$VER R=$REL install INSTALL_TOP=$PREFIX\
-                TO_LIB="liblua.a liblua.so";
+                TO_LIB="liblua.a liblua.so liblua.so.$VER";
             """
                         )
 
