@@ -28,7 +28,7 @@ class Utils:
         f.write(u'' + cmds)
         f.close()
 
-        _env = dict([(k.upper(), v) for (k, v) in env.items()])
+        _env = dict([(k.upper(), str(v)) for (k, v) in env.items()])
 
         if communicate:
             inp = subprocess.PIPE
@@ -83,7 +83,7 @@ class Lua:
 
         self.setup()
 
-        if self._options.task in ['custom_prefix', 'clean', 'build', 'install']:
+        if self._options.task in ['custom_prefix', 'clean', 'build', 'install', 'environment']:
             getattr(self, self._options.task)()
         else:
             raise ValueError('Unknown command %s' % ' '.join(args))
@@ -91,8 +91,22 @@ class Lua:
     def setup(self):
         self._env = {}
 
+        self._env.update(dict([
+            (k.lower(), v) for (k, v) in json.loads(self._options.env).items()
+        ]))
+
         self._env['project_root'] = os.path.abspath(
             os.path.join(os.path.dirname(__file__), '..'))
+
+        prefix = self._env.get('prefix', 'lua_default')
+        if not os.path.isabs(prefix):
+            prefix = os.path.join(self._env['project_root'], 'tmp', 'install', prefix)
+        self._env['prefix'] = prefix
+
+        self._env['ver'] = self._env.get('ver', '5.3')
+        self._env['rel'] = self._env.get('rel', '4')
+
+        self._env['pkgname'] = self._env.get('pkgname', 'lua')
 
     def _sub_shell(self, cmds, env={}, *args, **kwargs):
         return Utils.sub_shell(
@@ -118,21 +132,43 @@ class Lua:
     def build(self):
         self._sub_shell(r"""
             cd $PROJECT_ROOT;
-            make -C src -j3 V=5.3 R=4 TO_LIB="liblua.so liblua.a"\
-                CC=clang MYCFLAGS="-m32 -g -fPIC"\
-                MYLDFLAGS="-m32" linux;
+            make -C src -j3 V=$VER R=$REL MYCFLAGS="$CFLAGS"\
+                MYLDFLAGS="$LDFLAGS" linux;
             """
                         )
 
     def install(self):
         self._sub_shell(r"""
             cd $PROJECT_ROOT;
-            mkdir -p $PROJECT_ROOT/tmp/install;
-            make -f Makefile V=5.4 R=4 install INSTALL_TOP=$PROJECT_ROOT/tmp/install\
-                TO_LIB="liblua.a liblua.so"\
-                CC=clang MYCFLAGS="-m32 -g -fPIC" MYFDFLAGS="-m32";
+            mkdir -p build;
             """
                         )
+
+        with io.open(os.path.join(self._env['project_root'], 'src', 'lua.pc'), 'r') as inf:
+            with io.open(os.path.join(self._env['project_root'], 'build', 'lua.pc'), 'w') as outf:
+                outf.write(
+                    inf.read()\
+                        .replace('%VER%', self._env['ver'])\
+                        .replace('%REL%', self._env['rel'])\
+                        .replace('%PREFIX%', self._env['prefix'])
+                )
+
+        self._sub_shell(r"""
+            cd $PROJECT_ROOT;
+            mkdir -p build;
+            mkdir -p tmp/install;
+            install -D build/lua.pc $PREFIX/lib/pkgconfig/$PKGNAME.pc;
+            make -f Makefile V=$VER R=$REL install INSTALL_TOP=$PREFIX\
+                TO_LIB="liblua.a liblua.so";
+            """
+                        )
+
+    def environment(self):
+        print(json.dumps({
+            'pkg_config_path': os.path.join(self._env['prefix'], 'lib', 'pkgconfig'),
+            'ld_library_path': os.path.join(self._env['prefix'], 'lib'),
+            'pkgname': self._env['pkgname']
+        }))
 
     def custom_prefix(self):
         self.clean()

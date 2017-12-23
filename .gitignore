@@ -1,0 +1,6 @@
+build
+*.o
+liblua.a
+liblua.so*
+src/lua
+src/luac
