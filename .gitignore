@@ -4,3 +4,4 @@ liblua.a
 liblua.so*
 src/lua
 src/luac
+tmp
