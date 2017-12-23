@@ -52,7 +52,7 @@ R= $V.4
 all:	$(PLAT)
 
 $(PLATS) clean:
-	cd src && $(MAKE) $@
+	cd src && $(MAKE) $@ V=$(V) R=$(R)
 
 test:	dummy
 	src/lua -v
