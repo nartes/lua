@@ -100,7 +100,8 @@ class Lua:
 
         prefix = self._env.get('prefix', 'lua_default')
         if not os.path.isabs(prefix):
-            prefix = os.path.join(self._env['project_root'], 'tmp', 'install', prefix)
+            prefix = os.path.join(
+                self._env['project_root'], 'tmp', 'install', prefix)
         self._env['prefix'] = prefix
 
         self._env['ver'] = self._env.get('ver', '5.3')
@@ -130,12 +131,16 @@ class Lua:
                         )
 
     def build(self):
+        _linux = r'SYSCFLAGS="-DLUA_USE_LINUX" SYSLIBS="-Wl,-E -ldl -lreadline"'
         self._sub_shell(r"""
-            cd $PROJECT_ROOT;
-            make -C src -j3 V=$VER R=$REL MYCFLAGS="$CFLAGS"\
-                MYLDFLAGS="$LDFLAGS" linux;
-            """
-                        )
+cd $PROJECT_ROOT;
+make -C src -j3 V=$VER R=$REL\
+    MYCFLAGS="-fPIC $CFLAGS" MYLDFLAGS="-fPIC $LDFLAGS"\
+    {_linux} liblua.so
+make -C src lua_so_clean;
+make -C src -j3 V=$VER R=$REL\
+    MYCFLAGS="$CFLAGS" MYLDFLAGS="$LDFLAGS" linux
+            """.replace('{_linux}', _linux))
 
     def install(self):
         self._sub_shell(r"""
@@ -147,10 +152,10 @@ class Lua:
         with io.open(os.path.join(self._env['project_root'], 'src', 'lua.pc'), 'r') as inf:
             with io.open(os.path.join(self._env['project_root'], 'build', 'lua.pc'), 'w') as outf:
                 outf.write(
-                    inf.read()\
-                        .replace('%VER%', self._env['ver'])\
-                        .replace('%REL%', self._env['rel'])\
-                        .replace('%PREFIX%', self._env['prefix'])
+                    inf.read()
+                    .replace('%VER%', self._env['ver'])
+                    .replace('%REL%', self._env['rel'])
+                    .replace('%PREFIX%', self._env['prefix'])
                 )
 
         self._sub_shell(r"""
@@ -164,11 +169,13 @@ class Lua:
                         )
 
     def environment(self):
-        print(json.dumps({
+        _env = {
             'pkg_config_path': os.path.join(self._env['prefix'], 'lib', 'pkgconfig'),
             'ld_library_path': os.path.join(self._env['prefix'], 'lib'),
             'pkgname': self._env['pkgname']
-        }))
+        }
+
+        print(json.dumps(_env))
 
     def custom_prefix(self):
         self.clean()

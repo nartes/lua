@@ -11,6 +11,7 @@ INSTALL_CMOD=${prefix}/lib/lua/${V}
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
+static_libs=${libdir}/liblua.a -lm -ldl
 
 Name: Lua
 Description: An Extensible Extension Language
