@@ -29,6 +29,8 @@
 #include "lundump.h"
 #include "lvm.h"
 
+#define lua_lock(L)     ((void) 0)
+#define lua_unlock(L)   ((void) 0)
 
 
 const char lua_ident[] =

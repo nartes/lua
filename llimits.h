@@ -106,10 +106,10 @@ typedef lu_int32 Instruction;
 #endif
 
 
-#ifndef lua_lock
+//#ifndef lua_lock
 #define lua_lock(L)     ((void) 0) 
 #define lua_unlock(L)   ((void) 0)
-#endif
+//#endif
 
 #ifndef luai_threadyield
 #define luai_threadyield(L)     {lua_unlock(L); lua_lock(L);}
