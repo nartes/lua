@@ -18,7 +18,8 @@ LOCAL = $(TESTS) $(CWARNS)
 
 
 CC= gcc
-CFLAGS= -O2 -Wall $(MYCFLAGS)
+CFLAGS= -fPIC -O0 -m32 -g -Wall $(MYCFLAGS)
+LDFLAGS= -m32
 AR= ar rcu
 RANLIB= ranlib
 RM= rm -f
@@ -40,7 +41,7 @@ MYLIBS= -ldl -lreadline -lhistory -lncurses
 
 LIBS = -lm
 
-CORE_T=	liblua.a
+CORE_T=	liblua.so
 CORE_O=	lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o \
 	lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o  \
 	lundump.o lvm.o lzio.o ltests.o
@@ -56,7 +57,6 @@ LUAC_O=	luac.o print.o
 
 ALL_T= $(CORE_T) $(LUA_T) $(LUAC_T)
 ALL_O= $(CORE_O) $(LUA_O) $(LUAC_O) $(AUX_O) $(LIB_O)
-ALL_A= $(CORE_T)
 
 all:	$(ALL_T)
 
@@ -65,8 +65,7 @@ o:	$(ALL_O)
 a:	$(ALL_A)
 
 $(CORE_T): $(CORE_O) $(AUX_O) $(LIB_O)
-	$(AR) $@ $?
-	$(RANLIB) $@
+	$(CC) -o $@ -shared $(LDFLAGS) $(MYLDFLAGS) $(CORE_O) $(AUX_O) $(LIB_O) $(LIBS) $(MYLIBS) $(DL)
 
 $(LUA_T): $(LUA_O) $(CORE_T)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(CORE_T) $(LIBS) $(MYLIBS) $(DL)
